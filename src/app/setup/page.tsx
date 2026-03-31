@@ -6,7 +6,7 @@ const steps = [
     number: 1,
     title: '수집 스크립트 설치',
     description: '터미널을 열고 아래 명령어를 복사해서 실행하세요.',
-    code: 'mkdir -p ~/.goldplat && curl -sL https://raw.githubusercontent.com/Goldplat-co/gleami-agent-os/main/scripts/collect.sh -o ~/.goldplat/collect.sh && chmod +x ~/.goldplat/collect.sh',
+    code: 'mkdir -p ~/.goldplat && curl -sL https://raw.githubusercontent.com/Goldplat-co/claude-code-leaderboard/main/scripts/collect.sh -o ~/.goldplat/collect.sh && chmod +x ~/.goldplat/collect.sh',
   },
   {
     number: 2,
