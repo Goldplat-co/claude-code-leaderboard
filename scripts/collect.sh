@@ -4,7 +4,7 @@ set -euo pipefail
 CONFIG_DIR="$HOME/.goldplat"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 CLAUDE_DIR="$HOME/.claude"
-API_URL="${GOLDPLAT_API_URL:-http://localhost:3000/api/submit}"
+API_URL="${GOLDPLAT_API_URL:-https://claude-code-leaderboard-blue.vercel.app/api/submit}"
 API_KEY="${GOLDPLAT_API_KEY:-goldplat-leaderboard-2026}"
 
 cmd_config() {
@@ -28,11 +28,11 @@ get_nickname() {
 
 parse_usage() {
   local target_date="${1:-$(date -v-1d +%Y-%m-%d)}"
-  python3 << 'PYEOF' "$CLAUDE_DIR" "$target_date"
-import json, sys, os, glob
+  CLAUDE_DIR_ARG="$CLAUDE_DIR" TARGET_DATE_ARG="$target_date" python3 << 'PYEOF'
+import json, os, glob
 
-claude_dir = sys.argv[1]
-target_date = sys.argv[2]
+claude_dir = os.environ["CLAUDE_DIR_ARG"]
+target_date = os.environ["TARGET_DATE_ARG"]
 
 PRICING = {
     "claude-opus-4-6": {"input": 15.0, "output": 75.0},
@@ -103,7 +103,7 @@ cmd_send() {
   echo "  집계 결과: $usage"
   if [[ "$total_tokens" == "0" ]]; then
     echo "⚠️  $target_date에 사용 데이터가 없습니다."
-    exit 0
+    return 0
   fi
   echo "📤 전송 중..."
   local payload
