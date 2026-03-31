@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  --gold: #D4A020;
+  --gold-light: #F5E6B8;
+  --gold-dark: #B8860B;
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -8,19 +11,36 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-gold: #D4A020;
+  --color-gold-light: #F5E6B8;
+  --color-gold-dark: #B8860B;
+  --font-sans: "Pretendard", system-ui, -apple-system, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Pretendard", system-ui, -apple-system, sans-serif;
+}
+
+/* 골드 그라데이션 텍스트 */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #D4A020 0%, #F5E6B8 50%, #D4A020 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 골드 글로우 애니메이션 */
+@keyframes gold-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(212, 160, 32, 0.4), 0 0 20px rgba(212, 160, 32, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(212, 160, 32, 0.6), 0 0 40px rgba(212, 160, 32, 0.2);
+  }
+}
+
+.gold-glow {
+  animation: gold-glow 2s ease-in-out infinite;
 }
