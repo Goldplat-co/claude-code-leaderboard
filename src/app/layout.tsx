@@ -3,8 +3,8 @@ import Nav from '@/components/nav';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Claude Code 리더보드',
-  description: 'Claude Code 팀 사용량 리더보드',
+  title: 'Claude Code Dashboard',
+  description: 'Claude Code 팀 대시보드',
 };
 
 export default function RootLayout({
@@ -25,8 +25,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-white">
         <Nav />
-        {/* 메인 콘텐츠: 4xl 최대 너비로 가운데 정렬 */}
-        <main className="mx-auto w-full max-w-4xl px-4 py-6 flex-1">
+        {/* 메인 콘텐츠: 6xl 최대 너비로 가운데 정렬 */}
+        <main className="mx-auto w-full max-w-6xl px-4 py-6 flex-1">
           {children}
         </main>
       </body>
