@@ -41,7 +41,7 @@ export default async function BestPracticesPage() {
   return (
     <div>
       {/* 페이지 제목 */}
-      <h1 className="text-2xl font-bold mb-6">베스트 프랙티스</h1>
+      <h1 className="text-2xl font-bold mb-6">Best Practices</h1>
 
       {/* 클라이언트 컴포넌트 */}
       <BpClient members={members ?? []} snapshots={latestSnapshots} />

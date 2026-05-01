@@ -9,7 +9,7 @@ const navItems: { label: string; href: string; isNew?: boolean }[] = [
   { label: '트렌드', href: '/trends' },
   { label: '환경 점검', href: '/env', isNew: true },
   { label: '팀 모니터링', href: '/team', isNew: true },
-  { label: '베스트 프랙티스', href: '/best-practices', isNew: true },
+  { label: 'Best Practices', href: '/best-practices', isNew: true },
   { label: 'GitHub', href: '/github', isNew: true },
   { label: '설치 가이드', href: '/setup' },
 ];
