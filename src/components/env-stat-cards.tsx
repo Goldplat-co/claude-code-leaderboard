@@ -4,7 +4,7 @@ import type { EnvSnapshot } from '@/lib/types';
 
 /**
  * 환경 스냅샷 통계 카드 (2x2 그리드)
- * 스킬/에이전트/Hook/MCP 각 카운트를 표시하고, 이전 스냅샷 대비 변화량 표시
+ * 스킬/에이전트/Hook/연결된 도구(MCP+플러그인) 각 카운트를 표시하고, 이전 스냅샷 대비 변화량 표시
  * - snapshot: 현재 스냅샷
  * - prevSnapshot: 이전 스냅샷 (비교용, 없으면 변화량 미표시)
  */
@@ -14,17 +14,26 @@ interface Props {
   prevSnapshot?: EnvSnapshot | null;
 }
 
-const items = [
+// 일반 카운트 항목 (snapshot 키 직접 참조)
+const simpleItems = [
   { key: 'skill_count' as const, label: '스킬' },
   { key: 'agent_count' as const, label: '에이전트' },
   { key: 'hook_count' as const, label: 'Hook' },
-  { key: 'mcp_count' as const, label: 'MCP' },
 ] as const;
 
 export default function EnvStatCards({ snapshot, prevSnapshot }: Props) {
+  // 연결된 도구: MCP + 플러그인 합산
+  const currentTools = snapshot.mcp_count + snapshot.plugin_count;
+  const prevTools =
+    prevSnapshot != null
+      ? prevSnapshot.mcp_count + prevSnapshot.plugin_count
+      : null;
+  const toolsDiff = prevTools != null ? currentTools - prevTools : null;
+
   return (
     <div className="grid grid-cols-2 gap-4">
-      {items.map(({ key, label }) => {
+      {/* 스킬 / 에이전트 / Hook */}
+      {simpleItems.map(({ key, label }) => {
         const current = snapshot[key];
         const prev = prevSnapshot?.[key];
         const diff = prev != null ? current - prev : null;
@@ -49,6 +58,22 @@ export default function EnvStatCards({ snapshot, prevSnapshot }: Props) {
           </div>
         );
       })}
+
+      {/* 연결된 도구 (MCP + 플러그인 합산) */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="text-xs text-gray-400 mb-1">연결된 도구</div>
+        <div className="text-2xl font-bold">{currentTools}</div>
+        {toolsDiff !== null && toolsDiff !== 0 && (
+          <div
+            className={`text-xs font-semibold mt-1 ${
+              toolsDiff > 0 ? 'text-green-600' : 'text-red-500'
+            }`}
+          >
+            {toolsDiff > 0 ? '+' : ''}
+            {toolsDiff} vs 이전
+          </div>
+        )}
+      </div>
     </div>
   );
 }

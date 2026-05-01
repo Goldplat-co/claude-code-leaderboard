@@ -74,27 +74,19 @@ export function calculateHarness(data: HarnessInput): {
   });
   if (skillOk) score += 15;
 
-  // MCP 커넥터 (10점)
-  const mcpOk = data.mcp_connectors.length >= 1;
+  // 연결된 도구: MCP 커넥터 + 플러그인 합산 (20점)
+  const totalTools = data.mcp_connectors.length + data.plugins.length;
+  const toolsOk = totalTools >= 1;
   checks.push({
-    label: 'MCP 커넥터',
-    passed: mcpOk,
-    detail: mcpOk ? `${data.mcp_connectors.length}개 연결` : '미설정',
-    points: mcpOk ? 10 : 0,
-    maxPoints: 10,
+    label: '연결된 도구',
+    passed: toolsOk,
+    detail: toolsOk
+      ? `${totalTools}개 연결 (MCP ${data.mcp_connectors.length} + 플러그인 ${data.plugins.length})`
+      : '미설정',
+    points: toolsOk ? 20 : 0,
+    maxPoints: 20,
   });
-  if (mcpOk) score += 10;
-
-  // 플러그인 (10점)
-  const pluginOk = data.plugins.length >= 1;
-  checks.push({
-    label: '플러그인',
-    passed: pluginOk,
-    detail: pluginOk ? `${data.plugins.length}개 설치` : '미설치',
-    points: pluginOk ? 10 : 0,
-    maxPoints: 10,
-  });
-  if (pluginOk) score += 10;
+  if (toolsOk) score += 20;
 
   return { score, checks };
 }

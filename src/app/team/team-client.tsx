@@ -144,6 +144,7 @@ export default function TeamClient({
       agent_count: snap?.agent_count ?? 0,
       hook_count: snap?.hook_count ?? 0,
       mcp_count: snap?.mcp_count ?? 0,
+      plugin_count: snap?.plugin_count ?? 0,
       last_snapshot_date: snap?.date ?? null,
       badge,
     };
@@ -259,7 +260,7 @@ export default function TeamClient({
                   </span>
                   <span>스킬 {mvpSnapshot.skill_count}</span>
                   <span>에이전트 {mvpSnapshot.agent_count}</span>
-                  <span>MCP {mvpSnapshot.mcp_count}</span>
+                  <span>도구 {mvpSnapshot.mcp_count + mvpSnapshot.plugin_count}</span>
                 </div>
               </div>
             </div>

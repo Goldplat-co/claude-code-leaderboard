@@ -19,6 +19,7 @@ export interface TeamRow {
   agent_count: number;
   hook_count: number;
   mcp_count: number;
+  plugin_count: number;
   last_snapshot_date: string | null;
   badge: 'most-active' | 'best-setup' | 'growing' | 'starter';
 }
@@ -56,8 +57,9 @@ const badgeConfig: Record<
 
 /**
  * 팀 전체 멤버 비교 테이블
- * 컬럼: 멤버 | 하네스 | 스킬 | 에이전트 | Hook | MCP | 최근 활동 | 상태
+ * 컬럼: 멤버 | 하네스 | 스킬 | 에이전트 | Hook | 도구 | 최근 활동 | 상태
  * - 하네스 컬럼: 가로 바 (80px, 골드 색상 비례 채우기) + 점수 숫자
+ * - 도구 컬럼: MCP + 플러그인 합산 수
  * - 멤버 이름 클릭 → /env/[nickname] 으로 이동
  * - 상태 컬럼: 뱃지 타입에 따라 색상이 다른 pill 표시
  */
@@ -81,7 +83,7 @@ export default function TeamTable({ rows }: TeamTableProps) {
             <th className="px-4 py-3 font-medium text-right">스킬</th>
             <th className="px-4 py-3 font-medium text-right">에이전트</th>
             <th className="px-4 py-3 font-medium text-right">Hook</th>
-            <th className="px-4 py-3 font-medium text-right">MCP</th>
+            <th className="px-4 py-3 font-medium text-right">도구</th>
             <th className="px-4 py-3 font-medium">최근 활동</th>
             <th className="px-4 py-3 font-medium">상태</th>
           </tr>
@@ -145,9 +147,9 @@ export default function TeamTable({ rows }: TeamTableProps) {
                   {row.hook_count}
                 </td>
 
-                {/* MCP 수 */}
+                {/* 연결된 도구 수 (MCP + 플러그인 합산) */}
                 <td className="px-4 py-3 text-right tabular-nums">
-                  {row.mcp_count}
+                  {row.mcp_count + row.plugin_count}
                 </td>
 
                 {/* 최근 활동 날짜 */}
