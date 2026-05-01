@@ -28,7 +28,7 @@ const dashboardSteps = [
     number: 1,
     title: '스냅샷 스크립트 설치',
     description: '터미널을 열고 아래 명령어를 복사해서 실행하세요.',
-    code: 'curl -sL https://raw.githubusercontent.com/Goldplat-co/claude-code-leaderboard/main/scripts/snapshot.sh -o ~/.goldplat/snapshot.sh && chmod +x ~/.goldplat/snapshot.sh',
+    code: 'mkdir -p ~/.goldplat && curl -sL https://raw.githubusercontent.com/Goldplat-co/claude-code-leaderboard/main/scripts/snapshot.sh -o ~/.goldplat/snapshot.sh && chmod +x ~/.goldplat/snapshot.sh',
   },
   {
     number: 2,
@@ -76,6 +76,9 @@ export default function SetupPage() {
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-base">
             한 번만 따라하면 매일 자동으로 데이터가 올라가요
+          </p>
+          <p className="text-zinc-400 dark:text-zinc-500 text-sm mt-2">
+            ① 왼쪽(리더보드) 먼저 → ② 오른쪽(대시보드) 순서로 설치하세요
           </p>
         </header>
 
@@ -153,6 +156,8 @@ export default function SetupPage() {
             </div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
               Claude Code 환경 설정 스냅샷을 매일 자동 수집합니다.
+              <br />
+              <span className="text-xs text-zinc-400">※ 왼쪽 리더보드 수집기를 먼저 설치해야 합니다</span>
             </p>
 
             {/* 수집 데이터 태그 */}
