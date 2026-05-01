@@ -20,7 +20,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'skill', label: '스킬' },
   { key: 'hook', label: 'Hook' },
   { key: 'agent', label: '에이전트' },
-  { key: 'mcp', label: 'MCP 커넥터' },
+  { key: 'mcp', label: '연결된 도구' },
 ];
 
 interface BpClientProps {
@@ -268,28 +268,38 @@ export default function BpClient({ members, snapshots }: BpClientProps) {
   }
 
   /**
-   * MCP 커넥터 탭: 멤버별 커넥터 칩 (이름 + 타입)
+   * 연결된 도구 탭: 멤버별 MCP + 플러그인 통합 표시
    */
-  function renderMcpList() {
+  function renderConnectedToolsList() {
     return (
       <div className="space-y-4">
-        <p className="text-sm font-semibold text-gray-500 mb-3">멤버별 MCP 커넥터</p>
+        <p className="text-sm font-semibold text-gray-500 mb-3">멤버별 연결된 도구 (MCP + 플러그인)</p>
         {[...snapshotMap].map(([memberId, snap]) => {
           const member = memberMap.get(memberId);
-          if (!member || !snap.mcp_json?.length) return null;
+          if (!member) return null;
+          const hasMcp = snap.mcp_json?.length > 0;
+          const hasPlugins = snap.plugins_json?.length > 0;
+          if (!hasMcp && !hasPlugins) return null;
           return (
             <MemberRow
-              key={`mcp-row-${memberId}`}
+              key={`tools-row-${memberId}`}
               nickname={member.nickname}
               avatarColor={member.avatar_color}
             >
-              {snap.mcp_json.map((connector) => (
+              {(snap.plugins_json || []).map((plugin) => (
                 <span
-                  key={connector.name}
+                  key={`plugin-${plugin.name}`}
+                  className="px-3 py-1.5 rounded-lg text-sm bg-violet-50 border border-violet-200 text-violet-700"
+                >
+                  🔌 {plugin.name}
+                </span>
+              ))}
+              {(snap.mcp_json || []).map((connector) => (
+                <span
+                  key={`mcp-${connector.name}`}
                   className="px-3 py-1.5 rounded-lg text-sm bg-gray-100 border border-gray-200 text-gray-700"
                 >
-                  {connector.name}{' '}
-                  <span className="text-gray-400">({connector.type})</span>
+                  🔗 {connector.name}
                 </span>
               ))}
             </MemberRow>
@@ -325,7 +335,7 @@ export default function BpClient({ members, snapshots }: BpClientProps) {
       case 'agent':
         return renderAgentList();
       case 'mcp':
-        return renderMcpList();
+        return renderConnectedToolsList();
     }
   }
 
