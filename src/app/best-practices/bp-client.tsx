@@ -94,154 +94,240 @@ export default function BpClient({ members, snapshots }: BpClientProps) {
     return cards;
   }
 
-  /**
-   * 스킬 탭: 각 멤버의 skills_json에서 개별 스킬마다 카드 생성
-   */
-  function renderSkillCards() {
-    const cards: React.ReactNode[] = [];
+  // ── 헬퍼: 멤버 아바타 + 이름 행 ──────────────────
+  function MemberRow({
+    nickname,
+    avatarColor,
+    children,
+  }: {
+    nickname: string;
+    avatarColor: string;
+    children: React.ReactNode;
+  }) {
+    return (
+      <div className="flex items-start gap-3 mb-4">
+        {/* 아바타 원형 */}
+        <div
+          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+          style={{ backgroundColor: avatarColor }}
+        >
+          {nickname.charAt(0).toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-800 mb-1.5">{nickname}</p>
+          <div className="flex flex-wrap gap-1.5">{children}</div>
+        </div>
+      </div>
+    );
+  }
 
-    for (const [memberId, snap] of snapshotMap) {
-      const member = memberMap.get(memberId);
-      if (!member) continue;
+  /**
+   * 스킬 탭: 팀 공통 스킬(골드 칩) + 멤버별 스킬 리스트
+   */
+  function renderSkillList() {
+    // 스킬 이름 → 사용 멤버 수 집계
+    const skillCount = new Map<string, number>();
+    for (const [, snap] of snapshotMap) {
       if (!snap.skills_json?.length) continue;
-
       for (const skill of snap.skills_json) {
-        cards.push(
-          <BpCard
-            key={`skill-${memberId}-${skill.name}`}
-            nickname={member.nickname}
-            avatarColor={member.avatar_color}
-            harnessScore={snap.harness_score}
-            type="skill"
-            title={`${member.nickname}의 ${skill.name}`}
-            preview={skill.description || skill.name}
-            meta="⚡ 범용 스킬"
-            updatedDate={formatRelativeDate(snap.date)}
-            isRecommended={snap.harness_score >= 85}
-          />
-        );
+        skillCount.set(skill.name, (skillCount.get(skill.name) || 0) + 1);
       }
     }
 
-    return cards;
+    // 2명 이상이 설치한 스킬 = 팀 공통
+    const teamSkills = [...skillCount.entries()]
+      .filter(([, count]) => count >= 2)
+      .map(([name]) => name)
+      .sort();
+
+    // 1명만 사용하는 스킬 세트
+    const uniqueSkills = new Set(
+      [...skillCount.entries()].filter(([, count]) => count === 1).map(([name]) => name)
+    );
+
+    const hasData = skillCount.size > 0;
+
+    return (
+      <div className="space-y-6">
+        {/* 팀 공통 스킬 섹션 */}
+        {teamSkills.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-gray-500 mb-3">팀 공통 스킬</p>
+            <div className="flex flex-wrap gap-1.5">
+              {teamSkills.map((name) => (
+                <span
+                  key={`team-${name}`}
+                  className="px-3 py-1.5 rounded-lg text-sm bg-amber-50 border border-amber-200 text-amber-800"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 멤버별 스킬 */}
+        {hasData && (
+          <div>
+            <p className="text-sm font-semibold text-gray-500 mb-3">멤버별 스킬</p>
+            {[...snapshotMap].map(([memberId, snap]) => {
+              const member = memberMap.get(memberId);
+              if (!member || !snap.skills_json?.length) return null;
+              return (
+                <MemberRow
+                  key={`skill-row-${memberId}`}
+                  nickname={member.nickname}
+                  avatarColor={member.avatar_color}
+                >
+                  {snap.skills_json.map((skill) => (
+                    <span
+                      key={skill.name}
+                      className={`px-3 py-1.5 rounded-lg text-sm border ${
+                        uniqueSkills.has(skill.name)
+                          ? 'bg-gray-100 border-gray-200 text-gray-700'
+                          : 'bg-gray-100 border-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {skill.name}
+                      {uniqueSkills.has(skill.name) && (
+                        <span className="ml-1 text-xs text-gray-400">only</span>
+                      )}
+                    </span>
+                  ))}
+                </MemberRow>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
   }
 
   /**
-   * Hook 탭: 각 멤버의 hooks_json을 JSON 형태로 미리보기
+   * Hook 탭: 멤버별 Hook 리스트 (event: matcher 형태 칩)
    */
-  function renderHookCards() {
-    const cards: React.ReactNode[] = [];
-
-    for (const [memberId, snap] of snapshotMap) {
-      const member = memberMap.get(memberId);
-      if (!member) continue;
-      if (!snap.hooks_json?.length) continue;
-
-      const preview = JSON.stringify(snap.hooks_json, null, 2);
-
-      cards.push(
-        <BpCard
-          key={`hook-${memberId}`}
-          nickname={member.nickname}
-          avatarColor={member.avatar_color}
-          harnessScore={snap.harness_score}
-          type="hook"
-          title={`${member.nickname}의 Hooks (${snap.hooks_json.length}개)`}
-          preview={preview}
-          meta={`🔗 ${snap.hooks_json.length}개 Hook`}
-          updatedDate={formatRelativeDate(snap.date)}
-          isRecommended={snap.harness_score >= 85}
-        />
-      );
-    }
-
-    return cards;
+  function renderHookList() {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm font-semibold text-gray-500 mb-3">멤버별 Hook</p>
+        {[...snapshotMap].map(([memberId, snap]) => {
+          const member = memberMap.get(memberId);
+          if (!member || !snap.hooks_json?.length) return null;
+          return (
+            <MemberRow
+              key={`hook-row-${memberId}`}
+              nickname={member.nickname}
+              avatarColor={member.avatar_color}
+            >
+              {snap.hooks_json.map((hook, i) => (
+                <span
+                  key={`${hook.event}-${i}`}
+                  className="px-3 py-1.5 rounded-lg text-sm bg-gray-100 border border-gray-200 text-gray-700"
+                >
+                  {hook.event}
+                  {hook.matcher && `: ${hook.matcher}`}
+                </span>
+              ))}
+            </MemberRow>
+          );
+        })}
+      </div>
+    );
   }
 
   /**
-   * 에이전트 탭: 각 멤버의 agents_json에서 개별 에이전트마다 카드 생성
+   * 에이전트 탭: 멤버별 에이전트 칩 (이름 + 모델)
    */
-  function renderAgentCards() {
-    const cards: React.ReactNode[] = [];
+  function renderAgentList() {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm font-semibold text-gray-500 mb-3">멤버별 에이전트</p>
+        {[...snapshotMap].map(([memberId, snap]) => {
+          const member = memberMap.get(memberId);
+          if (!member || !snap.agents_json?.length) return null;
+          return (
+            <MemberRow
+              key={`agent-row-${memberId}`}
+              nickname={member.nickname}
+              avatarColor={member.avatar_color}
+            >
+              {snap.agents_json.map((agent) => (
+                <span
+                  key={agent.name}
+                  className="px-3 py-1.5 rounded-lg text-sm bg-gray-100 border border-gray-200 text-gray-700"
+                >
+                  {agent.name}{' '}
+                  <span className="text-gray-400">({agent.model})</span>
+                </span>
+              ))}
+            </MemberRow>
+          );
+        })}
+      </div>
+    );
+  }
 
-    for (const [memberId, snap] of snapshotMap) {
-      const member = memberMap.get(memberId);
-      if (!member) continue;
-      if (!snap.agents_json?.length) continue;
+  /**
+   * MCP 커넥터 탭: 멤버별 커넥터 칩 (이름 + 타입)
+   */
+  function renderMcpList() {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm font-semibold text-gray-500 mb-3">멤버별 MCP 커넥터</p>
+        {[...snapshotMap].map(([memberId, snap]) => {
+          const member = memberMap.get(memberId);
+          if (!member || !snap.mcp_json?.length) return null;
+          return (
+            <MemberRow
+              key={`mcp-row-${memberId}`}
+              nickname={member.nickname}
+              avatarColor={member.avatar_color}
+            >
+              {snap.mcp_json.map((connector) => (
+                <span
+                  key={connector.name}
+                  className="px-3 py-1.5 rounded-lg text-sm bg-gray-100 border border-gray-200 text-gray-700"
+                >
+                  {connector.name}{' '}
+                  <span className="text-gray-400">({connector.type})</span>
+                </span>
+              ))}
+            </MemberRow>
+          );
+        })}
+      </div>
+    );
+  }
 
-      for (const agent of snap.agents_json) {
-        const preview = [
-          `이름: ${agent.name}`,
-          `모델: ${agent.model}`,
-          '',
-          agent.description || '(설명 없음)',
-        ].join('\n');
+  // ── 현재 탭에 해당하는 콘텐츠 렌더링 ──────────────
 
-        cards.push(
-          <BpCard
-            key={`agent-${memberId}-${agent.name}`}
-            nickname={member.nickname}
-            avatarColor={member.avatar_color}
-            harnessScore={snap.harness_score}
-            type="agent"
-            title={`${member.nickname}의 ${agent.name}`}
-            preview={preview}
-            meta={`🤖 ${agent.model}`}
-            updatedDate={formatRelativeDate(snap.date)}
-            isRecommended={snap.harness_score >= 85}
-          />
+  function renderTabContent() {
+    switch (activeTab) {
+      case 'claude-md': {
+        const cards = renderClaudeMdCards();
+        if (cards.length === 0) {
+          return (
+            <div className="text-center py-20 text-gray-400">
+              아직 환경 데이터가 수집되지 않았습니다.
+            </div>
+          );
+        }
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {cards}
+          </div>
         );
       }
+      case 'skill':
+        return renderSkillList();
+      case 'hook':
+        return renderHookList();
+      case 'agent':
+        return renderAgentList();
+      case 'mcp':
+        return renderMcpList();
     }
-
-    return cards;
   }
-
-  /**
-   * MCP 탭: 각 멤버의 mcp_json을 리스트 형태로 미리보기
-   */
-  function renderMcpCards() {
-    const cards: React.ReactNode[] = [];
-
-    for (const [memberId, snap] of snapshotMap) {
-      const member = memberMap.get(memberId);
-      if (!member) continue;
-      if (!snap.mcp_json?.length) continue;
-
-      const preview = snap.mcp_json
-        .map((m) => `• ${m.name} (${m.type})`)
-        .join('\n');
-
-      cards.push(
-        <BpCard
-          key={`mcp-${memberId}`}
-          nickname={member.nickname}
-          avatarColor={member.avatar_color}
-          harnessScore={snap.harness_score}
-          type="mcp"
-          title={`${member.nickname}의 MCP (${snap.mcp_json.length}개)`}
-          preview={preview}
-          meta={`🔌 ${snap.mcp_json.length}개 커넥터`}
-          updatedDate={formatRelativeDate(snap.date)}
-          isRecommended={snap.harness_score >= 85}
-        />
-      );
-    }
-
-    return cards;
-  }
-
-  // ── 현재 탭에 해당하는 카드 렌더링 ──────────────
-
-  const cardRenderers: Record<TabKey, () => React.ReactNode[]> = {
-    'claude-md': renderClaudeMdCards,
-    skill: renderSkillCards,
-    hook: renderHookCards,
-    agent: renderAgentCards,
-    mcp: renderMcpCards,
-  };
-
-  const cards = cardRenderers[activeTab]();
 
   return (
     <div className="space-y-6">
@@ -262,16 +348,8 @@ export default function BpClient({ members, snapshots }: BpClientProps) {
         ))}
       </div>
 
-      {/* ── 카드 그리드 또는 빈 상태 ── */}
-      {cards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {cards}
-        </div>
-      ) : (
-        <div className="text-center py-20 text-gray-400">
-          아직 환경 데이터가 수집되지 않았습니다.
-        </div>
-      )}
+      {/* ── 탭 콘텐츠 ── */}
+      {renderTabContent()}
     </div>
   );
 }
