@@ -6,36 +6,33 @@ GoldPlat 팀의 Claude Code 사용량·환경 셋업 리더보드.
 
 ---
 
-## 🚨 하네스 점수가 낮게 나와요? (스냅샷 패치)
+## 한 줄 설치 (신규 + 기존 모두)
 
-기존 `~/.goldplat/snapshot.sh`는 사용자 디렉터리(`~/.claude/`)만 스캔해서
-**플러그인 스킬 / 프로젝트 `CLAUDE.md` / 프로젝트 `hooks`를 누락**합니다.
-실제 셋업이 풍부한데도 점수가 30~40점에 머무는 원인입니다.
-
-### 한 줄로 패치 + 재전송
+터미널에 그대로 붙여넣고 엔터:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Goldplat-co/claude-code-leaderboard/main/scripts/update-snapshot.sh | bash
 ```
 
-실행하면:
-1. 기존 `~/.goldplat/snapshot.sh`를 백업
-2. 패치된 `snapshot.sh`로 덮어쓰기
-3. 즉시 1회 재전송 (점수 갱신)
-4. 매일 09:05 LaunchAgent도 자동으로 패치 버전을 사용
+자동으로:
+1. 닉네임 미등록 시 입력 받기
+2. `snapshot.sh` / `collect.sh` 최신본 다운로드 (기존본 백업)
+3. **`PROJECT_DIRS` 자동 탐지** — `~/`, `~/work`, `~/dev`, `~/code`, `~/Projects`, `~/repos` 등에서 `CLAUDE.md` 또는 `.claude/` 가진 폴더를 찾아냄
+4. LaunchAgent 등록 (매일 09:00 사용량 / 09:05 환경 스냅샷)
+5. 즉시 1회 전송 → 점수 즉시 반영
 
-### 스캔 대상 추가하고 싶다면 (선택)
-
-추가 프로젝트 루트도 함께 스캔하려면:
+### 자동 탐지가 못 잡는 위치라면 (선택)
 
 ```bash
-PROJECT_DIRS="$HOME/work/foo:$HOME/work/bar" \
+PROJECT_DIRS="$HOME/elsewhere/foo:$HOME/elsewhere/bar" \
   curl -fsSL https://raw.githubusercontent.com/Goldplat-co/claude-code-leaderboard/main/scripts/update-snapshot.sh | bash
 ```
 
-(기본값은 `$HOME/juha_claude`)
+---
 
-### 패치가 무엇을 고치나
+## 하네스 점수가 낮게 나오는 이유 (배경)
+
+기존 `snapshot.sh`는 사용자 디렉터리(`~/.claude/`) 직속만 스캔해 다음을 누락:
 
 | 항목 | Before | After |
 |---|---|---|
@@ -44,21 +41,6 @@ PROJECT_DIRS="$HOME/work/foo:$HOME/work/bar" \
 | 에이전트 | `~/.claude/agents/*.md` | + 플러그인 에이전트 + 프로젝트 에이전트 |
 | 훅 | `~/.claude/settings.json` | + `$PROJECT_DIRS/.claude/settings.json` + `settings.local.json` |
 | 중복 | — | 이름 기준 dedupe |
-
----
-
-## 최초 설치 (신규 팀원)
-
-```bash
-# 1) 닉네임 설정
-./scripts/collect.sh config --name "홍길동"
-
-# 2) 사용량 자동 전송 (매일 09:00)
-./scripts/collect.sh setup-cron
-
-# 3) 환경 스냅샷 자동 전송 (매일 09:05)
-./scripts/snapshot.sh setup-cron
-```
 
 ---
 
