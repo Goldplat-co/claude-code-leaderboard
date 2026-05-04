@@ -25,97 +25,128 @@ get_nickname() {
 
 # ── 환경 데이터 수집 (Python 임베딩) ──
 collect_env() {
-  CLAUDE_DIR_ARG="$CLAUDE_DIR" python3 << 'PYEOF'
+  CLAUDE_DIR_ARG="$CLAUDE_DIR" PROJECT_DIRS_ARG="${PROJECT_DIRS:-$HOME/juha_claude}" python3 << 'PYEOF'
 import json, os, glob, re, sys
 
 claude_dir = os.environ["CLAUDE_DIR_ARG"]
 home = os.path.expanduser("~")
+project_dirs = [p for p in os.environ.get("PROJECT_DIRS_ARG", "").split(":") if p and os.path.isdir(p)]
 
-# ── 1. CLAUDE.md 내용 (최대 10KB) ──
-claude_md = ""
-claude_md_path = os.path.join(claude_dir, "CLAUDE.md")
-try:
-    with open(claude_md_path, encoding="utf-8") as f:
-        claude_md = f.read()[:10000]
-except (IOError, OSError):
-    pass
+# ── 1. CLAUDE.md 내용 (최대 10KB, 사용자 + 프로젝트 머지) ──
+claude_md_parts = []
+for label, path in [("~/.claude/CLAUDE.md", os.path.join(claude_dir, "CLAUDE.md"))] + \
+                   [(os.path.join(p, "CLAUDE.md"), os.path.join(p, "CLAUDE.md")) for p in project_dirs]:
+    try:
+        with open(path, encoding="utf-8") as f:
+            content = f.read()
+        if content.strip():
+            claude_md_parts.append(f"# === {label} ===\n{content}")
+    except (IOError, OSError):
+        continue
+claude_md = "\n\n".join(claude_md_parts)[:10000]
 
-# ── 2. 스킬 목록 (~/.claude/skills/*/SKILL.md) ──
+# ── 2. 스킬 목록 (사용자 + 플러그인 + 프로젝트) ──
+def parse_md_frontmatter(filepath, fallback_name):
+    try:
+        with open(filepath, encoding="utf-8") as f:
+            content = f.read(4000)
+    except (IOError, OSError):
+        return None
+    m = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
+    name = fallback_name
+    desc = ""
+    model = ""
+    if m:
+        fm = m.group(1)
+        nm = re.search(r"^name:\s*(.+)$", fm, re.MULTILINE)
+        dm = re.search(r"^description:\s*(.+)$", fm, re.MULTILINE)
+        mm = re.search(r"^model:\s*(.+)$", fm, re.MULTILINE)
+        if nm: name = nm.group(1).strip()
+        if dm: desc = dm.group(1).strip()
+        if mm: model = mm.group(1).strip()
+    return {"name": name, "description": desc, "model": model}
+
+skill_globs = [
+    os.path.join(claude_dir, "skills", "*", "SKILL.md"),
+    os.path.join(claude_dir, "plugins", "marketplaces", "*", "plugins", "*", "skills", "*", "SKILL.md"),
+    os.path.join(claude_dir, "plugins", "marketplaces", "*", "external_plugins", "*", "skills", "*", "SKILL.md"),
+    os.path.join(claude_dir, "plugins", "cache", "*", "*", "*", "skills", "*", "SKILL.md"),
+]
+for p in project_dirs:
+    skill_globs.append(os.path.join(p, ".claude", "skills", "*", "SKILL.md"))
+
 skills = []
-for skill_dir in sorted(glob.glob(os.path.join(claude_dir, "skills", "*"))):
-    skill_file = os.path.join(skill_dir, "SKILL.md")
-    if not os.path.isfile(skill_file):
-        continue
-    try:
-        with open(skill_file, encoding="utf-8") as f:
-            content = f.read(4000)
-        # YAML frontmatter 파싱 (--- 사이의 내용)
-        m = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
-        name = os.path.basename(skill_dir)
-        desc = ""
-        if m:
-            fm = m.group(1)
-            nm = re.search(r"^name:\s*(.+)$", fm, re.MULTILINE)
-            dm = re.search(r"^description:\s*(.+)$", fm, re.MULTILINE)
-            if nm:
-                name = nm.group(1).strip()
-            if dm:
-                desc = dm.group(1).strip()
-        skills.append({"name": name, "description": desc})
-    except (IOError, OSError):
-        continue
+seen_skills = set()
+for pattern in skill_globs:
+    for skill_file in sorted(glob.glob(pattern)):
+        fallback = os.path.basename(os.path.dirname(skill_file))
+        info = parse_md_frontmatter(skill_file, fallback)
+        if not info: continue
+        key = info["name"]
+        if key in seen_skills: continue
+        seen_skills.add(key)
+        skills.append({"name": info["name"], "description": info["description"]})
 
-# ── 3. 에이전트 목록 (~/.claude/agents/*.md) ──
+# ── 3. 에이전트 목록 (사용자 + 플러그인 + 프로젝트) ──
+agent_globs = [
+    os.path.join(claude_dir, "agents", "*.md"),
+    os.path.join(claude_dir, "plugins", "marketplaces", "*", "plugins", "*", "agents", "*.md"),
+    os.path.join(claude_dir, "plugins", "marketplaces", "*", "external_plugins", "*", "agents", "*.md"),
+    os.path.join(claude_dir, "plugins", "cache", "*", "*", "*", "agents", "*.md"),
+]
+for p in project_dirs:
+    agent_globs.append(os.path.join(p, ".claude", "agents", "*.md"))
+
 agents = []
-for agent_file in sorted(glob.glob(os.path.join(claude_dir, "agents", "*.md"))):
-    try:
-        with open(agent_file, encoding="utf-8") as f:
-            content = f.read(4000)
-        m = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
-        name = os.path.splitext(os.path.basename(agent_file))[0]
-        desc = ""
-        model = ""
-        if m:
-            fm = m.group(1)
-            nm = re.search(r"^name:\s*(.+)$", fm, re.MULTILINE)
-            dm = re.search(r"^description:\s*(.+)$", fm, re.MULTILINE)
-            mm = re.search(r"^model:\s*(.+)$", fm, re.MULTILINE)
-            if nm:
-                name = nm.group(1).strip()
-            if dm:
-                desc = dm.group(1).strip()
-            if mm:
-                model = mm.group(1).strip()
-        agents.append({"name": name, "description": desc, "model": model})
-    except (IOError, OSError):
-        continue
+seen_agents = set()
+for pattern in agent_globs:
+    for agent_file in sorted(glob.glob(pattern)):
+        fallback = os.path.splitext(os.path.basename(agent_file))[0]
+        info = parse_md_frontmatter(agent_file, fallback)
+        if not info: continue
+        key = info["name"]
+        if key in seen_agents: continue
+        seen_agents.add(key)
+        agents.append(info)
 
-# ── 4. 훅 목록 (~/.claude/settings.json → hooks) ──
-hooks = []
-settings_raw = {}
-settings_path = os.path.join(claude_dir, "settings.json")
-try:
-    with open(settings_path, encoding="utf-8") as f:
-        settings_raw = json.load(f)
-    # hooks 구조: { "EventName": [ { hooks: [{type, command}], matcher? } ] }
-    hooks_data = settings_raw.get("hooks", {})
+# ── 4. 훅 목록 (사용자 + 프로젝트 settings.json 머지) ──
+def extract_hooks(settings_dict):
+    out = []
+    hooks_data = settings_dict.get("hooks", {})
     for event_name, entries in hooks_data.items():
-        if not isinstance(entries, list):
-            continue
+        if not isinstance(entries, list): continue
         for entry in entries:
             matcher = entry.get("matcher", "")
-            inner_hooks = entry.get("hooks", [])
-            if not isinstance(inner_hooks, list):
-                continue
-            for h in inner_hooks:
-                hook_type = h.get("type", "command")
-                hooks.append({
+            for h in entry.get("hooks", []):
+                out.append({
                     "event": event_name,
-                    "type": hook_type,
+                    "type": h.get("type", "command"),
                     "matcher": matcher if matcher else None,
                 })
-except (IOError, OSError, json.JSONDecodeError):
-    pass
+    return out
+
+settings_paths = [os.path.join(claude_dir, "settings.json")]
+for p in project_dirs:
+    settings_paths.append(os.path.join(p, ".claude", "settings.json"))
+    settings_paths.append(os.path.join(p, ".claude", "settings.local.json"))
+
+hooks = []
+settings_raw = {}
+merged_permissions = {}
+merged_env = {}
+for sp in settings_paths:
+    try:
+        with open(sp, encoding="utf-8") as f:
+            sdata = json.load(f)
+    except (IOError, OSError, json.JSONDecodeError):
+        continue
+    if sp == settings_paths[0]:
+        settings_raw = sdata
+    hooks.extend(extract_hooks(sdata))
+    if isinstance(sdata.get("permissions"), dict):
+        merged_permissions.update(sdata["permissions"])
+    if isinstance(sdata.get("env"), dict):
+        merged_env.update(sdata["env"])
 
 # ── 5. MCP 커넥터 (~/.claude.json → projects.*.mcpServers) ──
 mcp_connectors = []
@@ -160,15 +191,11 @@ try:
 except (IOError, OSError, json.JSONDecodeError):
     pass
 
-# ── 7. settings 전체 (permissions 등 포함) ──
-settings_out = {}
-try:
-    settings_out = {
-        "permissions": settings_raw.get("permissions", {}),
-        "env": settings_raw.get("env", {}),
-    }
-except Exception:
-    pass
+# ── 7. settings 전체 (permissions 등 포함, 사용자+프로젝트 머지) ──
+settings_out = {
+    "permissions": merged_permissions,
+    "env": merged_env,
+}
 
 # ── 결과 JSON 출력 ──
 result = {
@@ -258,6 +285,8 @@ cmd_setup_cron() {
     <string>${API_URL}</string>
     <key>GOLDPLAT_SNAPSHOT_KEY</key>
     <string>${API_KEY}</string>
+    <key>PROJECT_DIRS</key>
+    <string>${PROJECT_DIRS:-$HOME/juha_claude}</string>
   </dict>
 </dict>
 </plist>
