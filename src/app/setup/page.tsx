@@ -1,5 +1,9 @@
 import { CodeBlock } from '@/components/code-block';
 
+// 원커맨드 설치
+const ONE_CMD_INSTALL =
+  'curl -sL https://claude-code-leaderboard-blue.vercel.app/install.sh | bash -s "내닉네임"';
+
 // 리더보드 수집기 설치 단계 (골드 테마)
 const leaderboardSteps = [
   {
@@ -81,6 +85,61 @@ export default function SetupPage() {
             ① 왼쪽(리더보드) 먼저 → ② 오른쪽(대시보드) 순서로 설치하세요
           </p>
         </header>
+
+        {/* 원커맨드 설치 (추천) */}
+        <div
+          className="rounded-xl border-2 p-6 mb-10"
+          style={{
+            borderColor: '#22c55e',
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(34, 197, 94, 0.02))',
+          }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+              🚀 원커맨드 설치
+            </h2>
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              추천
+            </span>
+          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+            아래 명령어 하나로 리더보드 + 대시보드 수집기가 모두 설치됩니다.
+            <br />
+            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+              &quot;내닉네임&quot; 부분만 본인 이름으로 바꿔서 터미널에 붙여넣기하세요.
+            </span>
+          </p>
+          <CodeBlock code={ONE_CMD_INSTALL} />
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500">✓</span> 스크립트 자동 다운로드
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500">✓</span> 닉네임 설정
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500">✓</span> 매일 자동 전송 (09:00 / 09:05)
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500">✓</span> 리더보드 + 대시보드 동시 설치
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500">✓</span> 테스트 전송까지 자동 완료
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500">✓</span> macOS 전용 (python3 필요)
+            </div>
+          </div>
+        </div>
+
+        {/* 구분선 */}
+        <div className="flex items-center gap-4 mb-10">
+          <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-800" />
+          <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
+            또는 단계별로 직접 설치
+          </span>
+          <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-800" />
+        </div>
 
         {/* 2-column 레이아웃: 리더보드 + 대시보드 수집기 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
