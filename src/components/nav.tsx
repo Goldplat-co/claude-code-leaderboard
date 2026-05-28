@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase-browser';
 
-// 네비게이션 항목 정의
 const navItems: { label: string; href: string; isNew?: boolean }[] = [
   { label: '순위', href: '/' },
   { label: '트렌드', href: '/trends' },
@@ -16,19 +16,26 @@ const navItems: { label: string; href: string; isNew?: boolean }[] = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  // 로그인 페이지에서는 Nav 숨김
+  if (pathname === '/login') return null;
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  }
 
   return (
     <nav className="border-b border-gray-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        {/* 로고: 골드 그라데이션 텍스트 */}
         <Link href="/" className="text-xl font-bold text-text-primary">
           Claude Code Dashboard
         </Link>
 
-        {/* 네비게이션 링크 */}
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
           {navItems.map((item) => {
-            // 현재 경로와 일치하면 활성 상태
             const isActive = item.href === '/'
               ? pathname === '/'
               : pathname.startsWith(item.href);
@@ -49,6 +56,12 @@ export default function Nav() {
               </Link>
             );
           })}
+          <button
+            onClick={handleLogout}
+            className="ml-3 px-3 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+          >
+            로그아웃
+          </button>
         </div>
       </div>
     </nav>
