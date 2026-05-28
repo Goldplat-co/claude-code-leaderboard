@@ -56,9 +56,19 @@ export default function Nav() {
               </Link>
             );
           })}
+          <Link
+            href="/my"
+            className={`ml-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              pathname === '/my'
+                ? 'bg-gold/10 text-gold-dark'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            내 계정
+          </Link>
           <button
             onClick={handleLogout}
-            className="ml-3 px-3 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
           >
             로그아웃
           </button>
